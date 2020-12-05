@@ -105,6 +105,20 @@ sub dump_graph() {
    }
 }
 
+sub make_fn(){
+   # check if the target is a macro using regex (hint: use  s//) 
+      # If it is a macro, look up the value it represents in %MACROS and then replace it
+   # check if the target exists in %Graph (target could be source files *.c and *.h, or phony targets, or real targets)
+      #if false, (must be a source file, or no recipe contains the target, or target is the value of a macro that doesn't appear in the %Graph )
+         #check if the target exists under the current directory (hint: system call)
+            #if false, print a suitable error message and exit from the script (e.g. "pmake: *** No rule to make target `fake.c', needed by`main.o'. Stop.")
+         #iterate on all keys of %Graph
+            #if key is a macro, replace macro by its value
+            #check if target == the value
+               #if false, print a suitable error message and exit from the script (e.g. "pmake: *** No rule to make target fake.c', needed bymain.o'. Stop.")
+            # return 1 (explain why we return 1 later)
+}
+
 sub load_Makefile() {
    open my $mkfile, "<$Makefile" or die "$0: $Makefile: $!";
    my $target;
