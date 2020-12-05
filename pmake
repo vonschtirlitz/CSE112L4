@@ -1,0 +1,140 @@
+#!/usr/bin/perl
+# $Id: pmake,v 1.36 2020-12-04 14:39:10-08 - - $
+
+$0 =~ s|.*/||;
+use Getopt::Std;
+use Data::Dumper;
+use strict;
+use warnings;
+
+$Data::Dumper::Indent = 1;
+$Data::Dumper::Sortkeys = 1;
+$Data::Dumper::Terse = 1;
+sub dump_hash ($\%) {
+   my ($label, $hashptr) = @_;
+   print STDERR "%$label: ", Data::Dumper->Dump ([$hashptr]);
+}
+
+my $STATUS = 0;
+END { exit $STATUS; }
+$SIG{'__WARN__'} = sub { print STDERR @_; $STATUS = 1; };
+$SIG{'__DIE__'} = sub { print STDERR @_; $STATUS = 1; exit; };
+
+# sigtoperl: x86_64 Linux unix1.lt.ucsc.edu
+# sigtoperl: Sun Nov 22 17:33:55 2020
+my %strsignal = (
+    0 => "Unknown signal 0",
+    1 => "Hangup",
+    2 => "Interrupt",
+    3 => "Quit",
+    4 => "Illegal instruction",
+    5 => "Trace/breakpoint trap",
+    6 => "Aborted",
+    7 => "Bus error",
+    8 => "Floating point exception",
+    9 => "Killed",
+   10 => "User defined signal 1",
+   11 => "Segmentation fault",
+   12 => "User defined signal 2",
+   13 => "Broken pipe",
+   14 => "Alarm clock",
+   15 => "Terminated",
+   16 => "Stack fault",
+   17 => "Child exited",
+   18 => "Continued",
+   19 => "Stopped (signal)",
+   20 => "Stopped",
+   21 => "Stopped (tty input)",
+   22 => "Stopped (tty output)",
+   23 => "Urgent I/O condition",
+   24 => "CPU time limit exceeded",
+   25 => "File size limit exceeded",
+   26 => "Virtual timer expired",
+   27 => "Profiling timer expired",
+   28 => "Window changed",
+   29 => "I/O possible",
+   30 => "Power failure",
+   31 => "Bad system call",
+);
+
+sub run_command (@) {
+   my (@command) = @_;
+   print "@command\n";
+   my $status = eval {no warnings; system @command};
+   return undef unless $status;
+   return "$!" if $status == -1;
+   my $signal = $status & 0x7F;
+   my $core = $status & 0x80;
+   my $exit = ($status >> 8) & 0xFF;
+   return "Error $exit" unless $signal || $core;
+   return ($strsignal{$signal} || "Invalid Signal Number $signal")
+        . ($core ? " (core dumped)" : "");
+}
+
+my $MAKECMDGOALS;
+my $Makefile = "Makefile";
+my %OPTIONS;
+my %GRAPH;
+my %MACROS;
+
+sub usage() { die "Usage: $0 [-d] [target]\n" }
+sub stop($) { die "$Makefile:@_. Stop.\n" }
+
+sub scan_cmdline() {
+   getopts "dg", \%OPTIONS;
+   usage unless @ARGV <= 1;
+   $MAKECMDGOALS = $ARGV[0] if @ARGV == 1;
+}
+
+sub dump_graph() {
+   print STDERR "%MACROS:\n";
+   for my $macro (sort keys %MACROS) {
+      printf STDERR "%7d [%s] = [%s]\n",
+             $MACROS{$macro}{LINE}, $macro, $MACROS{$macro}{VALUE};
+   }
+   print STDERR "MAKECMDGOALS = [$MAKECMDGOALS]\n";
+   print STDERR "%GRAPH:\n";
+   for my $target (sort keys %GRAPH) {
+      my $prereqs = $GRAPH{$target}{PREREQS};
+      printf STDERR "%7d [%s] :", $GRAPH{$target}{LINE}, $target;
+      print STDERR " [$_]" for @$prereqs;
+      print STDERR "\n";
+      for my $cmd (@{$GRAPH{$target}{COMMANDS}}) {
+         printf STDERR "%7d.\t[%s]\n", $cmd->{LINE}, $cmd->{CMD};;
+      }
+   }
+}
+
+sub load_Makefile() {
+   open my $mkfile, "<$Makefile" or die "$0: $Makefile: $!";
+   my $target;
+   while (defined (my $line = <$mkfile>)) {
+      next if $line =~ m/^\s*(#|$)/;
+      if (!$target && $line =~ m/^\s*(\S+)\s*=\s*(.*?)\s*$/) {
+         $MACROS{$1} = {LINE=> $., VALUE=> $2};
+      }elsif ($line =~ m/^(\S+)\s*:\s*(.*)/) {
+         $target = $1;
+         $GRAPH{$target}{PREREQS} = [split ' ', $2];
+         $GRAPH{$target}{LINE} = $.;
+         $MAKECMDGOALS = $target unless $MAKECMDGOALS;
+      }elsif ($line =~ m/^\t(.*)/) {
+         if (defined $target) {
+            push @{$GRAPH{$target}{COMMANDS}},
+                 {LINE=> $., CMD=> $1};
+         }else {
+            stop "$.: Command before first target";
+         }
+      }else {
+         stop "$.: Missing separator";
+      }
+   }
+   close $mkfile;
+}
+
+scan_cmdline;
+load_Makefile;
+
+dump_hash ("MACROS", %MACROS) if $OPTIONS{'d'};
+dump_hash ("GRAPH", %GRAPH) if $OPTIONS{'d'};
+dump_graph if $OPTIONS{'g'};
+
