@@ -105,9 +105,17 @@ sub dump_graph() {
    }
 }
 
-#sub make_fn(){
-   # check if the target is a macro using regex (hint: use  s//) 
+sub make_fn(){
+  print "make_fn starting!\n" if $OPTIONS{'d'};
+   # check if the target is a macro using regex (hint: use  s//)
+   for my $target (sort keys %GRAPH) {
+      print "$target\n" if $OPTIONS{'d'};#print key
+      my $prereqs = $GRAPH{$target}{PREREQS};
+      foreach my $i (@$prereqs) if $OPTIONS{'d'}{ #print all prereqs
+        print "\t$i\n";
+      }
 
+   }
    # this is what mackey has for checking if target is macro PIAZZA POST: @404
    #for my $line (@lines) {
    #$line =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
@@ -122,7 +130,8 @@ sub dump_graph() {
             #check if target == the value
                #if false, print a suitable error message and exit from the script (e.g. "pmake: *** No rule to make target fake.c', needed bymain.o'. Stop.")
             # return 1 (explain why we return 1 later)
-#}
+  print "end of make_fn!\n"
+}
 
 #sub process_prereqs(){
    #this might have to be $pre
@@ -170,8 +179,8 @@ sub load_Makefile() {
 
 scan_cmdline;
 load_Makefile;
+make_fn;
 
 dump_hash ("MACROS", %MACROS) if $OPTIONS{'d'};
 dump_hash ("GRAPH", %GRAPH) if $OPTIONS{'d'};
 dump_graph if $OPTIONS{'g'};
-
