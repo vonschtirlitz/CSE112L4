@@ -143,23 +143,23 @@ sub make_fn{ #needs target name
   print "\tend of make_fn!\n";
 }
 
-#sub process_prereqs(){
+sub process_prereqs(){
    #this might have to be $pre
-   #my @pre = $GRAPH{$target}{PREREQS};
+   my $pre = $GRAPH{$target}{PREREQS};
    #i might have to do @$pre
-   #for my $prereqs (@pre){
+   for my $prereqs (@pre){
       #need to count how many of the prereqs had commands executed
       #do the same thing in processing targets where i check if prereq is a macro using regex
-         #if macro{
+         if macro{
             #look up value in %MACROS and replace
             # $MACROS{PREREQS} = items split values by spaces?
-            #count+= make_fn item;
-         #}
-         #else{
-            #count+= make_fn prereq;
-         #}
-   #}
-#}
+            count+= make_fn item;
+         }
+         else{
+            count+= make_fn prereq;
+         }
+   }
+}
 
 sub load_Makefile() {
    open my $mkfile, "<$Makefile" or die "$0: $Makefile: $!";
