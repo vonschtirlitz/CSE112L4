@@ -182,7 +182,7 @@ sub make_fn(){ #needs target name
 
     print "\t\tcommands length: $#commandsarray\n"; #this doesnt display correct length but it works??
     foreach my $i (0 .. $#commandsarray){
-      my $cleancommand;
+      my $cleancommand = "";
       my $actualcommand = $GRAPH{$cleantarget}{COMMANDS}[$i]{CMD};
       print "actual command: $actualcommand\n";
       foreach my $j (split ' ',$actualcommand){#split by spaces into an array and check for macro
@@ -197,6 +197,7 @@ sub make_fn(){ #needs target name
           $cleancommand = $cleancommand.$jc;
         }
       }
+      print "executing: $cleancommand\n";
       #execute cleancommand
       print "\n";
     }
