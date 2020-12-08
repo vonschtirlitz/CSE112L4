@@ -189,17 +189,18 @@ sub make_fn(){ #needs target name
         my $jc = $j;
         $jc =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
         print "\t\t\t\t$j: $jc\n";
-        $cleancommand = $cleancommand.$jc
+
+        if($cleancommand eq ""){#add to command string
+          $cleancommand = $jc;
+        }else{
+          $cleancommand = $cleancommand." ";
+          $cleancommand = $cleancommand.$jc;
+        }
       }
-      #execute clean command
+      #execute cleancommand
       print "\n";
     }
 
-        #split by spaces into array
-          #check if its macro
-            #replace if so
-        #recombine
-        #execute
 
 
   print "\tend of make_fn!\n";
