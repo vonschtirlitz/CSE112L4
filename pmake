@@ -174,7 +174,7 @@ sub process_prereqs(){
 #THIS IS PSEUDOCDE NOT FULLY FUNCTIONING CODE
 sub target_obsolete(){
    #case 1 target exists under the directory (must be a real target)
-   if $target exists{
+   if (-e $target){
       #if target is older it means target is obsolete
       my $targetTime = (stat($target))[9];
       my $prereqTime = (stat($prereqs))[9];
@@ -199,7 +199,7 @@ sub target_obsolete(){
       }
    }
    #case 2 target doesnt exist under directory
-   else if target !exists under directory{
+   else{
       if count >0{
          #run_command
          if command contains macro{
@@ -211,14 +211,14 @@ sub target_obsolete(){
               }
            }
          }
+         return 1;
       }
-      return 1;
-   }
-   #case 3 phony target and none of prerequisites are updated
-   else{
-      print "pmake: Nothing to be done for `<target>";
-      exit(1);
-   }
+      else{
+         print "pmake: Nothing to be done for `<target>";
+         exit(1);
+      }
+      
+   }   
 }
 
 sub load_Makefile() {
