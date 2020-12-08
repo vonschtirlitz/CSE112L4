@@ -195,7 +195,7 @@ sub target_obsolete(){
       #target is newer than prereqs
       else{
          print  "<target> is up to date"
-         exit script
+         exit(1);
       }
    }
    #case 2 target doesnt exist under directory
@@ -207,7 +207,7 @@ sub target_obsolete(){
            if run_command returnValue != undefined{
               if !(command prefix "-"){
                  print "Error running command in case 2";
-                exit script
+                exit(56);
               }
            }
          }
@@ -217,7 +217,7 @@ sub target_obsolete(){
    #case 3 phony target and none of prerequisites are updated
    else{
       print "pmake: Nothing to be done for `<target>";
-      exit script
+      exit(1);
    }
 }
 
