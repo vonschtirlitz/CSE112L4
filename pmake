@@ -164,7 +164,7 @@ sub make_fn(){ #needs target name
   #else its present and can continue
 
   #prereqs
-  my $prereqs = $GRAPH{$target}{PREREQS};
+  my $prereqs = $GRAPH{$cleantarget}{PREREQS};
   print "\t\tprereqs:";
   foreach my $i (@$prereqs){ #do all prereqs
     my $ic = $i; #process macros
@@ -178,6 +178,21 @@ sub make_fn(){ #needs target name
     #if yes, done
     #if no, run the command
       #for each graph{$cleantarget}{commands}
+    my $commandsarray = $GRAPH{$cleantarget}{COMMANDS};
+    my $cleancommands;
+    print "\t\tcommands:\n";
+    foreach my $i (@$commandsarray){
+      my $actualcommand = $i; #need to get value from this thing
+      print "$actualcommand\n";
+      foreach my $j (split ' ',$actualcommand){
+
+        my $jc = $j;
+        $jc =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
+        print "\t\t\t\t$j: $jc";
+      }
+      print "\n";
+    }
+
         #split by spaces into array
           #check if its macro
             #replace if so
