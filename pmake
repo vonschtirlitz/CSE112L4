@@ -178,18 +178,20 @@ sub make_fn(){ #needs target name
     #if yes, done
     #if no, run the command
       #for each graph{$cleantarget}{commands}
-    my $commandsarray = $GRAPH{$cleantarget}{COMMANDS};
-    my $cleancommands;
-    print "\t\tcommands:\n";
-    foreach my $i (@$commandsarray){
-      my $actualcommand = $i; #need to get value from this thing
-      print "$actualcommand\n";
-      foreach my $j (split ' ',$actualcommand){
+    my @commandsarray = $GRAPH{$cleantarget}{COMMANDS};
 
+    print "\t\tcommands length: $#commandsarray\n"; #this doesnt display correct length but it works??
+    foreach my $i (0 .. $#commandsarray){
+      my $cleancommand;
+      my $actualcommand = $GRAPH{$cleantarget}{COMMANDS}[$i]{CMD};
+      print "actual command: $actualcommand\n";
+      foreach my $j (split ' ',$actualcommand){#split by spaces into an array and check for macro
         my $jc = $j;
         $jc =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
-        print "\t\t\t\t$j: $jc";
+        print "\t\t\t\t$j: $jc\n";
+        $cleancommand = $cleancommand.$jc
       }
+      #execute clean command
       print "\n";
     }
 
