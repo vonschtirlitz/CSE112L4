@@ -176,7 +176,9 @@ sub target_obsolete(){
    #case 1 target exists under the directory (must be a real target)
    if $target exists{
       #if target is older it means target is obsolete
-      if target.modTime < prereqs.modTime{
+      my $targetTime = (stat($target))[9];
+      my $prereqTime = (stat($prereqs))[9];
+      if $targetTime < $prereqTime{
          #target obsolete
          #run command  using run_command function
          if command contains macro{
