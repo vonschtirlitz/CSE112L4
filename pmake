@@ -105,9 +105,19 @@ sub dump_graph() {
    }
 }
 
+sub lookup($$) {
+   my ($name,$char) = @_;
+   return defined ($name) && $macros{$name}
+       || defined ($char) && $macros{$char}
+       || '';
+}
+
 sub make_all_fn(){
   print "make_all_fn starting!\n" if $OPTIONS{'d'};
    # check if the target is a macro using regex (hint: use  s//)
+
+   $line =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
+
    for my $target (sort keys %GRAPH) {
       print "$target\n" if $OPTIONS{'d'};#print key
       make_fn($target);
@@ -116,7 +126,7 @@ sub make_all_fn(){
    }
    # this is what mackey has for checking if target is macro PIAZZA POST: @404
    #for my $line (@lines) {
-   #$line =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
+
 
       # If it is a macro, look up the value it represents in %MACROS and then replace it
    # check if the target exists in %Graph (target could be source files *.c and *.h, or phony targets, or real targets)
@@ -170,11 +180,11 @@ sub target_obsolete(){
          #target obsolete
          #run command  using run_command function
          if command contains macro{
-            #look up value in %MACROS and replace all macros 
+            #look up value in %MACROS and replace all macros
            if run_command returnValue != undefined{
               if !(command prefix "-"){
                  print "Error running command in case 1";
-                
+
               }
            }
          }
@@ -186,12 +196,12 @@ sub target_obsolete(){
          exit script
       }
    }
-   #case 2 target doesnt exist under directory 
+   #case 2 target doesnt exist under directory
    else if target !exists under directory{
       if count >0{
-         #run_command 
+         #run_command
          if command contains macro{
-            #look up value in %MACROS and replace all macros 
+            #look up value in %MACROS and replace all macros
            if run_command returnValue != undefined{
               if !(command prefix "-"){
                  print "Error running command in case 2";
