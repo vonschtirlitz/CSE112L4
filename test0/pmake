@@ -107,8 +107,8 @@ sub dump_graph() {
 
 sub lookup($$) {
    my ($name,$char) = @_;
-   return defined ($name) && $MACROS{$name}{VALUE}
-       || defined ($char) && $MACROS{$char}{VALUE}
+   return defined ($name) && $MACROS{$name}
+       || defined ($char) && $MACROS{$char}
        || '';
 }
 
@@ -149,12 +149,10 @@ sub make_fn{ #needs target name
 
   my $cleantarget = $target;
   $cleantarget =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
-
   print "\t\ttarget macrovalue: $cleantarget\n";
 
 
   my $prereqs = $GRAPH{$target}{PREREQS};
-  print "\t\tprereqs:";
   foreach my $i (@$prereqs){ #do all prereqs
     print "\t\t\t$i\n";
     make_fn($i);
