@@ -177,13 +177,11 @@ sub make_fn(){ #needs target name
   #check if target exists in directory
     #if yes, done
     #if no, run the command
-      #for each graph{$cleantarget}{commands}
     my @commandsarray = @{$GRAPH{$cleantarget}{COMMANDS}};
 
     my $commandsarraylength = scalar(@commandsarray);
 
-    print "\t\tcommands length: $commandsarraylength\n"; #this doesnt display correct length but it works?? (doesnt)
-    #ah ok yeah so this and the line below need to be updated since its only doing the first element of the array
+    print "\t\tcommands length: $commandsarraylength\n";#maybe clean this a little
     foreach my $i (0 .. ($commandsarraylength -1)){
       my $cleancommand = "";
       my $actualcommand = $GRAPH{$cleantarget}{COMMANDS}[$i]{CMD};
