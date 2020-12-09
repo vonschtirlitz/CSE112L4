@@ -159,7 +159,24 @@ sub make_fn(){ #needs target name
   if($graphtargetkeys<1){
     #idk, check file system?
     #if not in directory, check all graph keys against macro
-    print "\t\terror message and crash or something\n";
+    if (-e $target){
+
+    }
+    else{
+       print "\t\tpmake: *** No rule to make target $target,needed by main.o. STOP."
+    }
+
+      foreach my $var ($GRAPH){
+      my $cleanvar = $var
+      $cleanvar =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
+      my $exists = $cleantarget eq $cleanvar
+      if(!$exists){
+         print "\t\tpmake: *** No rule to make target $target,needed by main.o. STOP."
+      }
+      }
+
+
+    return 1;
   }
   #else its present and can continue
 
