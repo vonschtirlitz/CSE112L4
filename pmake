@@ -350,4 +350,4 @@ dump_hash ("MACROS", %MACROS) if $OPTIONS{'d'};
 dump_hash ("GRAPH", %GRAPH) if $OPTIONS{'d'};
 dump_graph if $OPTIONS{'g'};
 
-make_all_fn;
+make_fn($MAKECMDGOALS);
