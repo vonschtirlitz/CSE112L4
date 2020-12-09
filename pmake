@@ -165,16 +165,20 @@ sub make_fn(){ #needs target name
     else{
        print "\t\tpmake: *** No rule to make target $target,needed by main.o. STOP. #1";
     }
-
+      my $exists = 0;
       foreach my $var (keys %GRAPH){
          my $cleanvar = $var;
-         print "\t\tThis is clean var: $cleanvar\n";
+         print "\t\tvar for graph cycle: $cleanvar\t";
          $cleanvar =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
-         my $exists = $cleantarget eq $cleanvar;
-         if(!$exists){
-            print "\t\tpmake: *** No rule to make target $target,needed by main.o. STOP. #2";
+         if($cleantarget eq $cleanvar){
+           $exists += 1;
          }
-      }
+       }
+       print "exists: $exists";
+       if(!$exists){
+          print "\t\tpmake: *** No rule to make target $target,needed by main.o. STOP. #2";
+       }
+
 
 
     return 1;
