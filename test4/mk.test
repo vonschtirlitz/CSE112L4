@@ -1,0 +1,9 @@
+#!/bin/sh -x
+# $Id: mk.test,v 1.7 2020-12-03 21:28:24-08 - - $
+rm hello
+pmake clean    >clean.log 2>&1
+pmake error    >error.log 2>&1
+pmake          >all.log 2>&1
+
+# Note: pmake error should produce some output with
+# an error message, but not crash.

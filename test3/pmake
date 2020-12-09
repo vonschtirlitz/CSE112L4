@@ -114,13 +114,13 @@ sub lookup($$) {
 
 
 sub make_all_fn(){
-  #print "make_all_fn starting!\n" if $OPTIONS{'d'};
+  print "make_all_fn starting!\n" if $OPTIONS{'d'};
    # check if the target is a macro using regex (hint: use  s//)
 
 
 
    for my $target (sort keys %GRAPH) {
-      #print "$target\n" if $OPTIONS{'d'};#print target
+      print "$target\n" if $OPTIONS{'d'};#print target
       make_fn($target);
 
 
@@ -139,98 +139,27 @@ sub make_all_fn(){
             #check if target == the value
                #if false, print a suitable error message and exit from the script (e.g. "pmake: *** No rule to make target fake.c', needed bymain.o'. Stop.")
             # return 1 (explain why we return 1 later)
-  #print "end of make_all_fn!\n"
+  print "end of make_all_fn!\n"
 }
 
-sub make_fn(){ #needs target name
-  #print "\tstart of make_fn!\n";
+sub make_fn{ #needs target name
+  print "\tstart of make_fn!\n";
   my $target = $_[0];
-  #print "\t\tmake_fn $target\n";
+  print "\t\tmake_fn $target\n";
 
-  #extract target value from macro if its a macro, same otherwise
   my $cleantarget = $target;
   $cleantarget =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
-  #print "\t\ttarget macrovalue: $cleantarget\n";
 
-  #check GRAPH
-  my $graphtargetkeys = keys %{$GRAPH{$cleantarget}};
-  #print "\t\tgraph has keys: $graphtargetkeys\n";
-    #not in graph
-  if($graphtargetkeys<1){
-    #idk, check file system?
-    #if not in directory, check all graph keys against macro
-    if (-e $target){
-
-    }
-    else{
-       print "\t\tpmake: *** No rule to make target $target,needed by main.o. STOP. #1";
-       #exit, remove the #1
-    }
-      my $exists = 0;
-      foreach my $var (keys %GRAPH){
-         my $cleanvar = $var;
-         #print "\t\tvar for graph cycle: $cleanvar\t";
-         $cleanvar =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
-         if($cleantarget eq $cleanvar){
-           $exists += 1;
-         }
-       }
-       #print "exists: $exists";
-       if(!$exists){
-          print "\t\tpmake: *** No rule to make target $target,needed by main.o. STOP. #2";
-          #exit, make sure to remove the #2
-       }
+  print "\t\ttarget macrovalue: $cleantarget\n";
 
 
-
-    return 1;
-  }
-  #else its present and can continue
-
-  #prereqs
-  my $prereqs = $GRAPH{$cleantarget}{PREREQS};
-  #print "\t\tprereqs:";
+  my $prereqs = $GRAPH{$target}{PREREQS};
+  print "\t\tprereqs:";
   foreach my $i (@$prereqs){ #do all prereqs
-    my $ic = $i; #process macros
-    $ic =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
-    #print "\t\t\t$i: $ic\n";
-
-    make_fn($ic);
+    print "\t\t\t$i\n";
+    make_fn($i);
   }
-
-  #check if target exists in directory
-    #if yes, done
-    #if no, run the command
-    my @commandsarray = @{$GRAPH{$cleantarget}{COMMANDS}};
-
-    my $commandsarraylength = scalar(@commandsarray);
-
-    #print "\t\tcommands length: $commandsarraylength\n";#maybe clean this a little
-    foreach my $i (0 .. ($commandsarraylength -1)){
-      my $cleancommand = "";
-      my $actualcommand = $GRAPH{$cleantarget}{COMMANDS}[$i]{CMD};
-      #print "actual command: $actualcommand\n";
-      foreach my $j (split ' ',$actualcommand){#split by spaces into an array and check for macro
-        my $jc = $j;
-        $jc =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
-        #print "\t\t\t\t$j: $jc\n";
-
-        if($cleancommand eq ""){#add to command string
-          $cleancommand = $jc;
-        }else{
-          $cleancommand = $cleancommand." ";
-          $cleancommand = $cleancommand.$jc;
-        }
-      }
-      #print "executing: $cleancommand\n";
-      #execute cleancommand
-      run_command($cleancommand);
-      #print "\n";
-    }
-
-
-
-  #print "\tend of make_fn!\n";
+  print "\tend of make_fn!\n";
 }
 
 # sub process_prereqs(){
@@ -251,14 +180,12 @@ sub make_fn(){ #needs target name
 #    }
 # }
 
-# #THIS IS PSEUDOCDE NOT FULLY FUNCTIONING CODE
+#THIS IS PSEUDOCDE NOT FULLY FUNCTIONING CODE
 # sub target_obsolete(){
 #    #case 1 target exists under the directory (must be a real target)
 #    if $target exists{
 #       #if target is older it means target is obsolete
-#       my $targetTime = (stat($target))[9];
-#       my $prereqTime = (stat($prereqs))[9];
-#       if $targetTime < $prereqTime{
+#       if target.modTime < prereqs.modTime{
 #          #target obsolete
 #          #run command  using run_command function
 #          if command contains macro{
