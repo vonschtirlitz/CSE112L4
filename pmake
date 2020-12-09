@@ -201,31 +201,34 @@ sub make_fn(){ #needs target name
   #check if target exists in directory
     #if yes, done
     #if no, run the command
-    my @commandsarray = @{$GRAPH{$cleantarget}{COMMANDS}};
+    if(exists $GRAPH{$cleantarget}{COMMANDS}){
+      #print "commands exists!\n";
+      my @commandsarray = @{$GRAPH{$cleantarget}{COMMANDS}};
 
-    my $commandsarraylength = scalar(@commandsarray);
+      my $commandsarraylength = scalar(@commandsarray);
 
-    #print "\t\tcommands length: $commandsarraylength\n";#maybe clean this a little
-    foreach my $i (0 .. ($commandsarraylength -1)){
-      my $cleancommand = "";
-      my $actualcommand = $GRAPH{$cleantarget}{COMMANDS}[$i]{CMD};
-      #print "actual command: $actualcommand\n";
-      foreach my $j (split ' ',$actualcommand){#split by spaces into an array and check for macro
-        my $jc = $j;
-        $jc =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
-        #print "\t\t\t\t$j: $jc\n";
+      #print "\t\tcommands length: $commandsarraylength\n";#maybe clean this a little
+      foreach my $i (0 .. ($commandsarraylength -1)){
+        my $cleancommand = "";
+        my $actualcommand = $GRAPH{$cleantarget}{COMMANDS}[$i]{CMD};
+        #print "actual command: $actualcommand\n";
+        foreach my $j (split ' ',$actualcommand){#split by spaces into an array and check for macro
+          my $jc = $j;
+          $jc =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
+          #print "\t\t\t\t$j: $jc\n";
 
-        if($cleancommand eq ""){#add to command string
-          $cleancommand = $jc;
-        }else{
-          $cleancommand = $cleancommand." ";
-          $cleancommand = $cleancommand.$jc;
+          if($cleancommand eq ""){#add to command string
+            $cleancommand = $jc;
+          }else{
+            $cleancommand = $cleancommand." ";
+            $cleancommand = $cleancommand.$jc;
+          }
         }
+        #print "executing: $cleancommand\n";
+        #execute cleancommand
+        run_command($cleancommand);
+        #print "\n";
       }
-      #print "executing: $cleancommand\n";
-      #execute cleancommand
-      run_command($cleancommand);
-      #print "\n";
     }
 
 
@@ -329,8 +332,10 @@ sub load_Makefile() {
 
 scan_cmdline;
 load_Makefile;
-make_all_fn;
+
 
 dump_hash ("MACROS", %MACROS) if $OPTIONS{'d'};
 dump_hash ("GRAPH", %GRAPH) if $OPTIONS{'d'};
 dump_graph if $OPTIONS{'g'};
+
+make_all_fn;
