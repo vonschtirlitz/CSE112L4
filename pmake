@@ -145,12 +145,12 @@ sub make_all_fn(){
 sub make_fn(){ #needs target name
   #print "\tstart of make_fn!\n";
   my $target = $_[0];
-  #print "\t\tmake_fn $target\n";
+  print "\t\tmake_fn $target\n";
 
   #extract target value from macro if its a macro, same otherwise
   my $cleantarget = $target;
   $cleantarget =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
-  #print "\t\ttarget macrovalue: $cleantarget\n";
+  print "\t\ttarget macrovalue: $cleantarget\n";
 
   #check GRAPH
   my $graphtargetkeys = keys %{$GRAPH{$cleantarget}};
@@ -163,9 +163,6 @@ sub make_fn(){ #needs target name
 
     }
     else{
-       print "\t\tpmake: *** No rule to make target $target,needed by main.o. STOP. #1";
-       #exit, remove the #1
-    }
       my $exists = 0;
       foreach my $var (keys %GRAPH){
          my $cleanvar = $var;
@@ -180,6 +177,10 @@ sub make_fn(){ #needs target name
           print "\t\tpmake: *** No rule to make target $target,needed by main.o. STOP. #2";
           #exit, make sure to remove the #2
        }
+       #print "\t\tpmake: *** No rule to make target $target,needed by main.o. STOP. #1";
+       #exit, remove the #1
+    }
+
 
 
 
@@ -189,11 +190,11 @@ sub make_fn(){ #needs target name
 
   #prereqs
   my $prereqs = $GRAPH{$cleantarget}{PREREQS};
-  #print "\t\tprereqs:";
+  print "\t\tprereqs:";
   foreach my $i (@$prereqs){ #do all prereqs
     my $ic = $i; #process macros
     $ic =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
-    #print "\t\t\t$i: $ic\n";
+    print "\t\t\t$i: $ic\n";
 
     make_fn($ic);
   }
@@ -211,7 +212,7 @@ sub make_fn(){ #needs target name
       foreach my $i (0 .. ($commandsarraylength -1)){
         my $cleancommand = "";
         my $actualcommand = $GRAPH{$cleantarget}{COMMANDS}[$i]{CMD};
-        #print "actual command: $actualcommand\n";
+        print "actual command: $actualcommand\n";
         foreach my $j (split ' ',$actualcommand){#split by spaces into an array and check for macro
           my $jc = $j;
           $jc =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
@@ -224,7 +225,7 @@ sub make_fn(){ #needs target name
             $cleancommand = $cleancommand.$jc;
           }
         }
-        #print "executing: $cleancommand\n";
+        print "executing: $cleancommand\n";
         #execute cleancommand
         run_command($cleancommand);
         #print "\n";
