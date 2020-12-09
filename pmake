@@ -181,14 +181,14 @@ sub make_fn{ #needs target name
          #print "\t\tvar for graph cycle: $cleanvar\t";
          $cleanvar =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
          print "cleanvar in loops is $cleanvar\n";
-         if($cleantarget eq $cleanvar){
+         if(($cleantarget eq $cleanvar) && (keys %{$GRAPH{$cleanvar}} >0)){
            $exists += 1;
            print "$cleantarget is now $cleanvar\n";
            $cleantarget = $cleanvar;
 
          }
        }
-       #print "exists: $exists";
+       print "exists: $exists";
        if($exists < 1){
           print "\t\tpmake: *** No rule to make target $target,needed by main.o. STOP. #2";
           #exit, make sure to remove the #2
@@ -353,10 +353,8 @@ sub load_Makefile() {
 
 scan_cmdline;
 load_Makefile;
-
+make_fn($MAKECMDGOALS);
 
 dump_hash ("MACROS", %MACROS) if $OPTIONS{'d'};
 dump_hash ("GRAPH", %GRAPH) if $OPTIONS{'d'};
 dump_graph if $OPTIONS{'g'};
-
-make_fn($MAKECMDGOALS);
