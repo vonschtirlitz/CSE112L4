@@ -1,3 +1,5 @@
+#nusenko@ucsc.edu
+#srani@ucsc.edu
 #!/usr/bin/perl
 # $Id: pmake,v 1.36 2020-12-04 14:39:10-08 - - $
 
@@ -74,7 +76,6 @@ sub run_command (@) {
    }
 
    my $status = eval {no warnings; system @command};
-   print "status = $status\n";
    if($firstchar eq "-"){
      return undef
   }
@@ -160,7 +161,7 @@ sub make_all_fn(){
 sub make_fn{ #needs target name
   #print "\tstart of make_fn!\n";
   my $target = $_[0];
-  print "\tmake_fn $target\n";
+  #print "\tmake_fn $target\n";
 
   #extract target value from macro if its a macro, same otherwise
   my $cleantarget = $target;
@@ -192,8 +193,8 @@ sub make_fn{ #needs target name
        }
        print "exists: $exists";
        if($exists < 1){
-          print "\t\tpmake: *** No rule to make target $target,needed by main.o. STOP. #2";
-          #exit, make sure to remove the #2
+          print "\t\tpmake: *** No rule to make target $target,needed by main.o. STOP.";
+          exit 1;
        }
        #print "\t\tpmake: *** No rule to make target $target,needed by main.o. STOP. #1";
        #exit, remove the #1
@@ -220,7 +221,9 @@ sub make_fn{ #needs target name
   #check if target exists in directory
     #if yes, done
     if (-e $cleantarget){
-      print "target exists, aborting\n";
+      #print "target exists, aborting\n";
+      #exit here?
+      #exit 
     }
     #if no, run the command
 
