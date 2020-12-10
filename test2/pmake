@@ -1,0 +1,346 @@
+#!/usr/bin/perl
+#nusenko@ucsc.edu
+#srani@ucsc.edu
+# $Id: pmake,v 1.36 2020-12-04 14:39:10-08 - - $
+
+$0 =~ s|.*/||;
+use Getopt::Std;
+use Data::Dumper;
+use strict;
+use warnings;
+
+$Data::Dumper::Indent = 1;
+$Data::Dumper::Sortkeys = 1;
+$Data::Dumper::Terse = 1;
+sub dump_hash ($\%) {
+   my ($label, $hashptr) = @_;
+   print STDERR "%$label: ", Data::Dumper->Dump ([$hashptr]);
+}
+
+my $STATUS = 0;
+END { exit $STATUS; }
+$SIG{'__WARN__'} = sub { print STDERR @_; $STATUS = 1; };
+$SIG{'__DIE__'} = sub { print STDERR @_; $STATUS = 1; exit; };
+
+# sigtoperl: x86_64 Linux unix1.lt.ucsc.edu
+# sigtoperl: Sun Nov 22 17:33:55 2020
+my %strsignal = (
+    0 => "Unknown signal 0",
+    1 => "Hangup",
+    2 => "Interrupt",
+    3 => "Quit",
+    4 => "Illegal instruction",
+    5 => "Trace/breakpoint trap",
+    6 => "Aborted",
+    7 => "Bus error",
+    8 => "Floating point exception",
+    9 => "Killed",
+   10 => "User defined signal 1",
+   11 => "Segmentation fault",
+   12 => "User defined signal 2",
+   13 => "Broken pipe",
+   14 => "Alarm clock",
+   15 => "Terminated",
+   16 => "Stack fault",
+   17 => "Child exited",
+   18 => "Continued",
+   19 => "Stopped (signal)",
+   20 => "Stopped",
+   21 => "Stopped (tty input)",
+   22 => "Stopped (tty output)",
+   23 => "Urgent I/O condition",
+   24 => "CPU time limit exceeded",
+   25 => "File size limit exceeded",
+   26 => "Virtual timer expired",
+   27 => "Profiling timer expired",
+   28 => "Window changed",
+   29 => "I/O possible",
+   30 => "Power failure",
+   31 => "Bad system call",
+);
+
+sub run_command (@) {
+   my (@command) = @_;
+   my $firstchar = substr($command[0],0,1);
+   #print "runcommand element 0: $firstchar\n";
+   if($firstchar eq "@"){
+     @command = substr($command[0],2);
+     #print "@ command, new command is @command\n";
+   }
+   elsif($firstchar eq "-"){
+     @command = substr($command[0],2);
+    print "@command\n";
+   }
+   else{
+     print "@command\n";
+   }
+
+   my $status = eval {no warnings; system @command};
+   if($firstchar eq "-"){
+     return undef
+  }
+  else{
+    return undef unless $status;
+    return "$!" if $status == -1;
+    my $signal = $status & 0x7F;
+    my $core = $status & 0x80;
+    my $exit = ($status >> 8) & 0xFF;
+    return "Error $exit" unless $signal || $core;
+    return ($strsignal{$signal} || "Invalid Signal Number $signal")
+         . ($core ? " (core dumped)" : "");
+  }
+}
+
+my $MAKECMDGOALS;
+my $Makefile = "Makefile";
+my %OPTIONS;
+my %GRAPH;
+my %MACROS;
+
+sub usage() { die "Usage: $0 [-d] [target]\n" }
+sub stop($) { die "$Makefile:@_. Stop.\n" }
+
+sub scan_cmdline() {
+   getopts "dg", \%OPTIONS;
+   usage unless @ARGV <= 1;
+   $MAKECMDGOALS = $ARGV[0] if @ARGV == 1;
+}
+
+sub dump_graph() {
+   print STDERR "%MACROS:\n";
+   for my $macro (sort keys %MACROS) {
+      printf STDERR "%7d [%s] = [%s]\n",
+             $MACROS{$macro}{LINE}, $macro, $MACROS{$macro}{VALUE};
+   }
+   print STDERR "MAKECMDGOALS = [$MAKECMDGOALS]\n";
+   print STDERR "%GRAPH:\n";
+   for my $target (sort keys %GRAPH) {
+      my $prereqs = $GRAPH{$target}{PREREQS};
+      printf STDERR "%7d [%s] :", $GRAPH{$target}{LINE}, $target;
+      print STDERR " [$_]" for @$prereqs;
+      print STDERR "\n";
+      for my $cmd (@{$GRAPH{$target}{COMMANDS}}) {
+         printf STDERR "%7d.\t[%s]\n", $cmd->{LINE}, $cmd->{CMD};;
+      }
+   }
+}
+
+sub lookup($$) {
+   my ($name,$char) = @_;
+   return defined ($name) && $MACROS{$name}{VALUE}
+       || defined ($char) && $MACROS{$char}{VALUE}
+       || '';
+}
+
+sub process_macros{
+   foreach my $key(keys %GRAPH){
+       if(substr($key,0,1) eq '$'){
+         my $mac = $key;
+         $mac =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
+         foreach my $keyData (keys %{$GRAPH{$key}}){
+            $GRAPH{$mac} = $keyData;
+         }
+       }
+   }
+}
+
+sub make_all_fn(){
+  #print "make_all_fn starting!\n" if $OPTIONS{'d'};
+   # check if the target is a macro using regex (hint: use  s//)
+
+
+
+   for my $target (sort keys %GRAPH) {
+      #print "$target\n" if $OPTIONS{'d'};#print target
+      make_fn($target);
+
+
+   }
+}
+
+sub make_fn{ #needs target name
+  #print "\tstart of make_fn!\n";
+  my $target = $_[0];
+  #print "\tmake_fn $target\n";
+
+  #extract target value from macro if its a macro, same otherwise
+  my $cleantarget = $target;
+  $cleantarget =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
+  #print "\t\ttarget macrovalue: $cleantarget\n";
+
+  #check GRAPH
+  my $graphtargetkeys = keys %{$GRAPH{$cleantarget}};
+  #print "\t\tgraph has keys: $graphtargetkeys\n";
+    #not in graph
+  if($graphtargetkeys<1){
+    #idk, check file system?
+    #if not in directory, check all graph keys against macro
+    if (-e $cleantarget){
+    }
+    else{
+      my $exists = 0;
+      foreach my $var (keys %GRAPH){
+         my $cleanvar = $var;
+         #print "\t\tvar for graph cycle: $cleanvar\t";
+         $cleanvar =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
+         print "cleanvar in loops is $cleanvar\n";
+         if(($cleantarget eq $cleanvar) && (keys %{$GRAPH{$cleanvar}} >0)){
+           $exists += 1;
+           print "$cleantarget is now $cleanvar\n";
+           $cleantarget = $cleanvar;
+
+         }
+       }
+       #print "exists: $exists";
+       if($exists < 1){
+          print "\t\tpmake: *** No rule to make target $target,needed by main.o. STOP.";
+          exit 1;
+       }
+       #print "\t\tpmake: *** No rule to make target $target,needed by main.o. STOP. #1";
+       #exit, remove the #1
+    }
+
+
+
+
+    #return 1;
+  }
+  #else its present and can continue
+
+  #prereqs
+  my $prereqs = $GRAPH{$cleantarget}{PREREQS};
+  #print "\t\tprereqs:";
+  foreach my $i (@$prereqs){ #do all prereqs
+    my $ic = $i; #process macros
+    $ic =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
+    #print "\t\t\t$i: $ic\n";
+
+    make_fn($ic);
+  }
+
+  #check if target exists in directory
+    #if yes, done
+    if (-e $cleantarget){
+      #print "make: `$cleantarget' is up to date.\n";
+      #exit here?
+      #exit
+    }
+    #if no, run the command
+
+    elsif(exists $GRAPH{$cleantarget}{COMMANDS}){
+      #print "commands exists!\n";
+      my @commandsarray = @{$GRAPH{$cleantarget}{COMMANDS}};
+
+      my $commandsarraylength = scalar(@commandsarray);
+
+      #print "\t\tcommands length: $commandsarraylength\n";#maybe clean this a little
+      foreach my $i (0 .. ($commandsarraylength -1)){
+        my $cleancommand = "";
+        my $actualcommand = $GRAPH{$cleantarget}{COMMANDS}[$i]{CMD};
+        #print "actual command: $actualcommand\n";
+        foreach my $j (split ' ',$actualcommand){#split by spaces into an array and check for macro
+          my $jc = $j;
+          $jc =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
+          #print "\t\t\t\t$j: $jc\n";
+
+          if($cleancommand eq ""){#add to command string
+            $cleancommand = $jc;
+          }else{
+            $cleancommand = $cleancommand." ";
+            $cleancommand = $cleancommand.$jc;
+          }
+        }
+        #print "executing: $cleancommand\n";
+        #execute cleancommand
+        run_command($cleancommand);
+      }
+    }
+
+
+
+
+}
+
+
+# sub target_obsolete(){
+#   case 1 target exists under the directory (must be a real target)
+#   if $target exists{
+#       #if target is older it means target is obsolete
+#       my $targetTime = (stat($target))[9];
+#       my $prereqTime = (stat($prereqs))[9];
+#       if $targetTime < $prereqTime{
+#          target obsolete
+#          run command  using run_command function
+#          if command contains macro{
+#            look up value in %MACROS and replace all macros
+#            if run_command returnValue != undefined{
+ #              if !(command prefix "-"){
+ #                 print "Error running command in case 1";
+
+#               }
+#          }
+#           return 1;
+ #      }
+ #      #target is newer than prereqs
+ #      else{
+ #         print  "<target> is up to date"
+ #         exit script
+ #   }
+ #   case 2 target doesnt exist under directory
+ #   else if target !exists under directory{
+ #      if count >0{
+  #        #run_command
+  #       if command contains macro{
+            #look up value in %MACROS and replace all macros
+   #         if run_command returnValue != undefined{
+  #             if !(command prefix "-"){
+  #                print "Error running command in case 2";
+  #               exit script
+   #            }
+   #         }
+   #       }
+  #     }
+   #    return 1;
+  #  }
+    #case 3 phony target and none of prerequisites are updated
+#    else{
+#       print "pmake: Nothing to be done for `<target>";
+#       exit script
+#    }
+# }
+
+sub load_Makefile() {
+   open my $mkfile, "<$Makefile" or die "$0: $Makefile: $!";
+   my $target;
+   while (defined (my $line = <$mkfile>)) {
+      next if $line =~ m/^\s*(#|$)/;
+      if (!$target && $line =~ m/^\s*(\S+)\s*=\s*(.*?)\s*$/) {
+         $MACROS{$1} = {LINE=> $., VALUE=> $2};
+      }elsif ($line =~ m/^(\S+)\s*:\s*(.*)/) {
+         $target = $1;
+         $GRAPH{$target}{PREREQS} = [split ' ', $2];
+         $GRAPH{$target}{LINE} = $.;
+         $MAKECMDGOALS = $target unless $MAKECMDGOALS;
+      }elsif ($line =~ m/^\t(.*)/) {
+         if (defined $target) {
+            push @{$GRAPH{$target}{COMMANDS}},
+                 {LINE=> $., CMD=> $1};
+         }else {
+            stop "$.: Command before first target";
+         }
+      }else {
+         stop "$.: Missing separator";
+      }
+   }
+   close $mkfile;
+}
+
+scan_cmdline;
+load_Makefile;
+process_macros;
+
+dump_hash ("MACROS", %MACROS) if $OPTIONS{'d'};
+dump_hash ("GRAPH", %GRAPH) if $OPTIONS{'d'};
+dump_graph if $OPTIONS{'g'};
+
+make_fn($MAKECMDGOALS);
