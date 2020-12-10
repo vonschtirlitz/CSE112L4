@@ -135,8 +135,8 @@ sub process_macros{
    foreach my $key(keys %GRAPH){
        if(substr($key,0,1) eq '$'){
          my $mac = $key;
-         $mac =~ s/${(.*?)}|$(.)/lookup($1,$2)/ge;
-         foreach my $keyData(keys %GRAPH{$key}){
+         $mac =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
+         foreach my $keyData (keys %{$GRAPH{$key}}){
             $GRAPH{$mac} = $keyData;
          }
        }
