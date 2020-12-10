@@ -63,25 +63,31 @@ sub run_command (@) {
    #print "runcommand element 0: $firstchar\n";
    if($firstchar eq "@"){
      @command = substr($command[0],2);
-     print "@ command, new command is @command\n";
+     #print "@ command, new command is @command\n";
    }
    elsif($firstchar eq "-"){
      @command = substr($command[0],2);
-     print "- command, new command is @command\n";
+     #print "- command, new command is @command\n";
    }
    else{
      print "@command\n";
    }
 
    my $status = eval {no warnings; system @command};
-   return undef unless $status;
-   return "$!" if $status == -1;
-   my $signal = $status & 0x7F;
-   my $core = $status & 0x80;
-   my $exit = ($status >> 8) & 0xFF;
-   return "Error $exit" unless $signal || $core;
-   return ($strsignal{$signal} || "Invalid Signal Number $signal")
-        . ($core ? " (core dumped)" : "");
+   print "status = $status\n";
+   if($firstchar eq "-"){
+     return undef
+  }
+  else{
+    return undef unless $status;
+    return "$!" if $status == -1;
+    my $signal = $status & 0x7F;
+    my $core = $status & 0x80;
+    my $exit = ($status >> 8) & 0xFF;
+    return "Error $exit" unless $signal || $core;
+    return ($strsignal{$signal} || "Invalid Signal Number $signal")
+         . ($core ? " (core dumped)" : "");
+  }
 }
 
 my $MAKECMDGOALS;
@@ -248,7 +254,6 @@ sub make_fn{ #needs target name
         #print "executing: $cleancommand\n";
         #execute cleancommand
         run_command($cleancommand);
-        #print "\n";
       }
     }
 
