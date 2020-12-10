@@ -155,21 +155,6 @@ sub make_all_fn(){
 
 
    }
-   # this is what mackey has for checking if target is macro PIAZZA POST: @404
-   #for my $line (@lines) {
-
-
-      # If it is a macro, look up the value it represents in %MACROS and then replace it
-   # check if the target exists in %Graph (target could be source files *.c and *.h, or phony targets, or real targets)
-      #if false, (must be a source file, or no recipe contains the target, or target is the value of a macro that doesn't appear in the %Graph )
-         #check if the target exists under the current directory (hint: system call)
-            #if false, print a suitable error message and exit from the script (e.g. "pmake: *** No rule to make target `fake.c', needed by`main.o'. Stop.")
-         #iterate on all keys of %Graph
-            #if key is a macro, replace macro by its value
-            #check if target == the value
-               #if false, print a suitable error message and exit from the script (e.g. "pmake: *** No rule to make target fake.c', needed bymain.o'. Stop.")
-            # return 1 (explain why we return 1 later)
-  #print "end of make_all_fn!\n"
 }
 
 sub make_fn{ #needs target name
@@ -270,71 +255,51 @@ sub make_fn{ #needs target name
 
 
 
-  #print "\tend of make_fn!\n";
+  
 }
 
-# sub process_prereqs(){
-#    #this might have to be $pre
-#    my $pre = $GRAPH{$target}{PREREQS};
-#    #i might have to do @$pre
-#    for my $prereqs (@pre){
-#       #need to count how many of the prereqs had commands executed
-#       #do the same thing in processing targets where i check if prereq is a macro using regex
-#          if macro{
-#             #look up value in %MACROS and replace
-#             # $MACROS{PREREQS} = items split values by spaces?
-#             count+= make_fn item;
-#          }
-#          else{
-#             count+= make_fn prereq;
-#          }
-#    }
-# }
 
-# #THIS IS PSEUDOCDE NOT FULLY FUNCTIONING CODE
 # sub target_obsolete(){
-#    #case 1 target exists under the directory (must be a real target)
-#    if $target exists{
+#   case 1 target exists under the directory (must be a real target)
+#   if $target exists{
 #       #if target is older it means target is obsolete
 #       my $targetTime = (stat($target))[9];
 #       my $prereqTime = (stat($prereqs))[9];
 #       if $targetTime < $prereqTime{
-#          #target obsolete
-#          #run command  using run_command function
+#          target obsolete
+#          run command  using run_command function
 #          if command contains macro{
-#             #look up value in %MACROS and replace all macros
+#            look up value in %MACROS and replace all macros
 #            if run_command returnValue != undefined{
-#               if !(command prefix "-"){
-#                  print "Error running command in case 1";
-#
+ #              if !(command prefix "-"){
+ #                 print "Error running command in case 1";
+
 #               }
-#            }
 #          }
 #           return 1;
-#       }
-#       #target is newer than prereqs
-#       else{
-#          print  "<target> is up to date"
-#          exit script
-#       }
-#    }
-#    #case 2 target doesnt exist under directory
-#    else if target !exists under directory{
-#       if count >0{
-#          #run_command
-#          if command contains macro{
-#             #look up value in %MACROS and replace all macros
-#            if run_command returnValue != undefined{
-#               if !(command prefix "-"){
-#                  print "Error running command in case 2";
-#                 exit script
-#               }
-#            }
-#          }
-#       }
-#       return 1;
-#    }
-#    #case 3 phony target and none of prerequisites are updated
+ #      }
+ #      #target is newer than prereqs
+ #      else{
+ #         print  "<target> is up to date"
+ #         exit script
+ #   }
+ #   case 2 target doesnt exist under directory
+ #   else if target !exists under directory{
+ #      if count >0{
+  #        #run_command
+  #       if command contains macro{
+            #look up value in %MACROS and replace all macros
+   #         if run_command returnValue != undefined{
+  #             if !(command prefix "-"){
+  #                print "Error running command in case 2";
+  #               exit script
+   #            }
+   #         }
+   #       }
+  #     }
+   #    return 1;
+  #  }
+    #case 3 phony target and none of prerequisites are updated
 #    else{
 #       print "pmake: Nothing to be done for `<target>";
 #       exit script
