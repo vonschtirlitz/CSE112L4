@@ -221,7 +221,7 @@ sub make_fn{ #needs target name
   #check if target exists in directory
     #if yes, done
     if (-e $cleantarget){
-      print "make: `$cleantarget' is up to date.\n";
+      #print "make: `$cleantarget' is up to date.\n";
       #exit here?
       #exit
     }
