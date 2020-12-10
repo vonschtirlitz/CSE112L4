@@ -1,6 +1,6 @@
+#!/usr/bin/perl
 #nusenko@ucsc.edu
 #srani@ucsc.edu
-#!/usr/bin/perl
 # $Id: pmake,v 1.36 2020-12-04 14:39:10-08 - - $
 
 $0 =~ s|.*/||;
@@ -223,7 +223,7 @@ sub make_fn{ #needs target name
     if (-e $cleantarget){
       #print "target exists, aborting\n";
       #exit here?
-      #exit 
+      #exit
     }
     #if no, run the command
 
@@ -258,7 +258,7 @@ sub make_fn{ #needs target name
 
 
 
-  
+
 }
 
 
