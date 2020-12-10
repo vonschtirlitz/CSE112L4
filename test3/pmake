@@ -59,16 +59,35 @@ my %strsignal = (
 
 sub run_command (@) {
    my (@command) = @_;
-   print "@command\n";
+   my $firstchar = substr($command[0],0,1);
+   #print "runcommand element 0: $firstchar\n";
+   if($firstchar eq "@"){
+     @command = substr($command[0],2);
+     #print "@ command, new command is @command\n";
+   }
+   elsif($firstchar eq "-"){
+     @command = substr($command[0],2);
+     #print "- command, new command is @command\n";
+   }
+   else{
+     print "@command\n";
+   }
+
    my $status = eval {no warnings; system @command};
-   return undef unless $status;
-   return "$!" if $status == -1;
-   my $signal = $status & 0x7F;
-   my $core = $status & 0x80;
-   my $exit = ($status >> 8) & 0xFF;
-   return "Error $exit" unless $signal || $core;
-   return ($strsignal{$signal} || "Invalid Signal Number $signal")
-        . ($core ? " (core dumped)" : "");
+   print "status = $status\n";
+   if($firstchar eq "-"){
+     return undef
+  }
+  else{
+    return undef unless $status;
+    return "$!" if $status == -1;
+    my $signal = $status & 0x7F;
+    my $core = $status & 0x80;
+    my $exit = ($status >> 8) & 0xFF;
+    return "Error $exit" unless $signal || $core;
+    return ($strsignal{$signal} || "Invalid Signal Number $signal")
+         . ($core ? " (core dumped)" : "");
+  }
 }
 
 my $MAKECMDGOALS;
@@ -112,15 +131,26 @@ sub lookup($$) {
        || '';
 }
 
+sub process_macros{
+   foreach my $key(keys %GRAPH){
+       if(substr($key,0,1) eq '$'){
+         my $mac = $key;
+         $mac =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
+         foreach my $keyData (keys %{$GRAPH{$key}}){
+            $GRAPH{$mac} = $keyData;
+         }
+       }
+   }
+}
 
 sub make_all_fn(){
-  print "make_all_fn starting!\n" if $OPTIONS{'d'};
+  #print "make_all_fn starting!\n" if $OPTIONS{'d'};
    # check if the target is a macro using regex (hint: use  s//)
 
 
 
    for my $target (sort keys %GRAPH) {
-      print "$target\n" if $OPTIONS{'d'};#print target
+      #print "$target\n" if $OPTIONS{'d'};#print target
       make_fn($target);
 
 
@@ -139,27 +169,108 @@ sub make_all_fn(){
             #check if target == the value
                #if false, print a suitable error message and exit from the script (e.g. "pmake: *** No rule to make target fake.c', needed bymain.o'. Stop.")
             # return 1 (explain why we return 1 later)
-  print "end of make_all_fn!\n"
+  #print "end of make_all_fn!\n"
 }
 
 sub make_fn{ #needs target name
-  print "\tstart of make_fn!\n";
+  #print "\tstart of make_fn!\n";
   my $target = $_[0];
-  print "\t\tmake_fn $target\n";
+  print "\tmake_fn $target\n";
 
+  #extract target value from macro if its a macro, same otherwise
   my $cleantarget = $target;
   $cleantarget =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
+  #print "\t\ttarget macrovalue: $cleantarget\n";
 
-  print "\t\ttarget macrovalue: $cleantarget\n";
+  #check GRAPH
+  my $graphtargetkeys = keys %{$GRAPH{$cleantarget}};
+  #print "\t\tgraph has keys: $graphtargetkeys\n";
+    #not in graph
+  if($graphtargetkeys<1){
+    #idk, check file system?
+    #if not in directory, check all graph keys against macro
+    if (-e $cleantarget){
+    }
+    else{
+      my $exists = 0;
+      foreach my $var (keys %GRAPH){
+         my $cleanvar = $var;
+         #print "\t\tvar for graph cycle: $cleanvar\t";
+         $cleanvar =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
+         print "cleanvar in loops is $cleanvar\n";
+         if(($cleantarget eq $cleanvar) && (keys %{$GRAPH{$cleanvar}} >0)){
+           $exists += 1;
+           print "$cleantarget is now $cleanvar\n";
+           $cleantarget = $cleanvar;
+
+         }
+       }
+       print "exists: $exists";
+       if($exists < 1){
+          print "\t\tpmake: *** No rule to make target $target,needed by main.o. STOP. #2";
+          #exit, make sure to remove the #2
+       }
+       #print "\t\tpmake: *** No rule to make target $target,needed by main.o. STOP. #1";
+       #exit, remove the #1
+    }
 
 
-  my $prereqs = $GRAPH{$target}{PREREQS};
-  print "\t\tprereqs:";
-  foreach my $i (@$prereqs){ #do all prereqs
-    print "\t\t\t$i\n";
-    make_fn($i);
+
+
+    #return 1;
   }
-  print "\tend of make_fn!\n";
+  #else its present and can continue
+
+  #prereqs
+  my $prereqs = $GRAPH{$cleantarget}{PREREQS};
+  #print "\t\tprereqs:";
+  foreach my $i (@$prereqs){ #do all prereqs
+    my $ic = $i; #process macros
+    $ic =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
+    #print "\t\t\t$i: $ic\n";
+
+    make_fn($ic);
+  }
+
+  #check if target exists in directory
+    #if yes, done
+    if (-e $cleantarget){
+      print "target exists, aborting\n";
+    }
+    #if no, run the command
+
+    elsif(exists $GRAPH{$cleantarget}{COMMANDS}){
+      #print "commands exists!\n";
+      my @commandsarray = @{$GRAPH{$cleantarget}{COMMANDS}};
+
+      my $commandsarraylength = scalar(@commandsarray);
+
+      #print "\t\tcommands length: $commandsarraylength\n";#maybe clean this a little
+      foreach my $i (0 .. ($commandsarraylength -1)){
+        my $cleancommand = "";
+        my $actualcommand = $GRAPH{$cleantarget}{COMMANDS}[$i]{CMD};
+        #print "actual command: $actualcommand\n";
+        foreach my $j (split ' ',$actualcommand){#split by spaces into an array and check for macro
+          my $jc = $j;
+          $jc =~ s/\$\{(.*?)\}|\$(.)/lookup($1,$2)/ge;
+          #print "\t\t\t\t$j: $jc\n";
+
+          if($cleancommand eq ""){#add to command string
+            $cleancommand = $jc;
+          }else{
+            $cleancommand = $cleancommand." ";
+            $cleancommand = $cleancommand.$jc;
+          }
+        }
+        #print "executing: $cleancommand\n";
+        #execute cleancommand
+        run_command($cleancommand);
+      }
+    }
+
+
+
+  #print "\tend of make_fn!\n";
 }
 
 # sub process_prereqs(){
@@ -180,12 +291,14 @@ sub make_fn{ #needs target name
 #    }
 # }
 
-#THIS IS PSEUDOCDE NOT FULLY FUNCTIONING CODE
+# #THIS IS PSEUDOCDE NOT FULLY FUNCTIONING CODE
 # sub target_obsolete(){
 #    #case 1 target exists under the directory (must be a real target)
 #    if $target exists{
 #       #if target is older it means target is obsolete
-#       if target.modTime < prereqs.modTime{
+#       my $targetTime = (stat($target))[9];
+#       my $prereqTime = (stat($prereqs))[9];
+#       if $targetTime < $prereqTime{
 #          #target obsolete
 #          #run command  using run_command function
 #          if command contains macro{
@@ -256,8 +369,10 @@ sub load_Makefile() {
 
 scan_cmdline;
 load_Makefile;
-make_all_fn;
+process_macros;
 
 dump_hash ("MACROS", %MACROS) if $OPTIONS{'d'};
 dump_hash ("GRAPH", %GRAPH) if $OPTIONS{'d'};
 dump_graph if $OPTIONS{'g'};
+
+make_fn($MAKECMDGOALS);
