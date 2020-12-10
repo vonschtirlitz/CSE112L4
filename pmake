@@ -69,7 +69,7 @@ sub run_command (@) {
    }
    elsif($firstchar eq "-"){
      @command = substr($command[0],2);
-     #print "- command, new command is @command\n";
+    print "@command\n";
    }
    else{
      print "@command\n";
@@ -191,7 +191,7 @@ sub make_fn{ #needs target name
 
          }
        }
-       print "exists: $exists";
+       #print "exists: $exists";
        if($exists < 1){
           print "\t\tpmake: *** No rule to make target $target,needed by main.o. STOP.";
           exit 1;
@@ -221,7 +221,7 @@ sub make_fn{ #needs target name
   #check if target exists in directory
     #if yes, done
     if (-e $cleantarget){
-      #print "target exists, aborting\n";
+      print "make: `$cleantarget' is up to date.\n";
       #exit here?
       #exit
     }
