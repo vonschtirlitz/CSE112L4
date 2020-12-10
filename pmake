@@ -131,6 +131,17 @@ sub lookup($$) {
        || '';
 }
 
+sub process_macros{
+   foreach my $key(keys %GRAPH){
+       if(substr($key,0,1) eq '$'){
+         my $mac = $key;
+         $mac =~ s/${(.*?)}|$(.)/lookup($1,$2)/ge;
+         foreach my $keyData(keys %GRAPH{$key}){
+            $GRAPH{$mac} = $keyData;
+         }
+       }
+   }
+}
 
 sub make_all_fn(){
   #print "make_all_fn starting!\n" if $OPTIONS{'d'};
@@ -358,8 +369,10 @@ sub load_Makefile() {
 
 scan_cmdline;
 load_Makefile;
-make_fn($MAKECMDGOALS);
+process_macros;
 
 dump_hash ("MACROS", %MACROS) if $OPTIONS{'d'};
 dump_hash ("GRAPH", %GRAPH) if $OPTIONS{'d'};
 dump_graph if $OPTIONS{'g'};
+
+make_fn($MAKECMDGOALS);
